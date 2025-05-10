@@ -1,0 +1,197 @@
+#include <stdio.h>
+#include <locale.h>
+
+//Aluno: Samuel Rodrigues Viana Lobo
+//Matricula: 232014191
+
+// Funcao para calcular MDC e mostrar passo a passo
+int calculaMDC(int a, int b, char nomeA, char nomeB) {
+    int resto;
+    printf("\n[1] Calculando MDC(%d,%d) para verificar se %c e %c sao coprimos:\n", a, b, nomeA, nomeB);
+
+    do {
+        resto = a % b;
+        printf("%d = %d * %d + %d\n", a, b, a/b, resto);
+        a = b;
+        b = resto;
+    } while (resto != 0);
+
+    printf("MDC = %d\n", a);
+    return a;
+}
+
+// Funcao para calcular o inverso modular
+int calculaInverso(int G, int n) {
+    printf("\n[2] Calculando inverso de %d mod %d:\n", G, n);
+
+    int original = n;
+    int a = n, b = G;
+    int t1 = 0, t2 = 1;
+    int q, r, t;
+
+    while (b != 0) {
+        q = a / b;
+        r = a % b;
+        printf("%d = %d * %d + %d\n", a, b, q, r);
+
+        t = t1 - q * t2;
+        t1 = t2;
+        t2 = t;
+
+        a = b;
+        b = r;
+    }
+
+    if (a == 1) {
+        // O inverso é t1 (se positivo) ou t1 + original (se negativo)
+        t1 = (t1 % original + original) % original;
+        printf("Inverso encontrado: %d\n", t1);
+        printf("Verificacao: %d * %d mod %d = %d\n",
+               G, t1, original, (G * t1) % original);
+        return t1;
+    } else {
+        printf("Nao existe inverso!\n");
+        return -1;
+    }
+}
+
+// Função para verificar se um número é primo
+int verificaPrimo(int num) {
+    if (num <= 1) return 0;
+    if (num <= 3) return 1;
+    if (num % 2 == 0 || num % 3 == 0) return 0;
+
+    for (int i = 5; i * i <= num; i += 6) {
+        if (num % i == 0 || num % (i + 2) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Função para calcular teorema de Euler (φ(n))
+int calculaTeorema(int n) {
+    printf("\n[5] Calculando φ(%d):\n", n);
+    int resultado = n;
+
+    // Verifica divisibilidade por 2
+    if (n % 2 == 0) {
+        resultado -= resultado / 2;
+        printf("Fator 2 encontrado. φ = %d\n", resultado);
+        while (n % 2 == 0) n /= 2;
+    }
+
+    // Verifica divisibilidade por números ímpares
+    for (int i = 3; i * i <= n; i += 2) {
+        if (n % i == 0) {
+            resultado -= resultado / i;
+            printf("Fator %d encontrado. φ = %d\n", i, resultado);
+            while (n % i == 0) n /= i;
+        }
+    }
+
+    // Se n for primo maior que 2
+    if (n > 2) {
+        resultado -= resultado / n;
+        printf("Fator %d encontrado. φ = %d\n", n, resultado);
+    }
+
+    return resultado;
+}
+
+// Função para exponenciação modular rápida
+int expModular(int base, int expoente, int modulo) {
+    int resultado = 1;
+    base = base % modulo;
+
+    while (expoente > 0) {
+        if (expoente % 2 == 1) {
+            resultado = (resultado * base) % modulo;
+        }
+        expoente = expoente >> 1;
+        base = (base * base) % modulo;
+    }
+    return resultado;
+}
+
+int main() {
+    setlocale(LC_ALL, "Portuguese");
+
+    int H, G, n, x, n1;
+
+    printf("-- SISTEMA DE VERIFICACAO MODULAR --\n");
+    printf("Digite H, G e n (separados por espaco): ");
+    scanf("%d %d %d", &H, &G, &n);
+
+    printf("Digite o expoente x: ");
+    scanf("%d", &x);
+
+    printf("Digite o modulo n1: ");
+    scanf("%d", &n1);
+
+    // ETAPA 1: Verificar se G e n são coprimos
+    if (calculaMDC(G, n, 'G', 'n') != 1) {
+        printf("\nERRO: G e n nao sao coprimos! Divisao nao e possivel.\n");
+        return 0;
+    }
+
+    // ETAPA 2: Calcular inverso modular de G em Zn
+    int inversoG = calculaInverso(G, n);
+    if (inversoG == -1) {
+        printf("\nERRO: Inverso de G nao existe!\n");
+        return 0;
+    }
+
+    // ETAPA 3: Calcular a = H/G mod n (que e H * inversoG mod n)
+    int a = (H * inversoG) % n;
+    printf("\n[3] Calculando a = H/G mod n:\n");
+    printf("%d/%d congr. %d * %d congr. %d mod %d\n", H, G, H, inversoG, a, n);
+
+    // ETAPA 4: Verificar se a e n1 são coprimos
+    if (calculaMDC(a, n1, 'a', 'n') != 1) {
+        printf("\nERRO: a e n1 nao sao coprimos!\n");
+        return 0;
+    }
+
+    // ETAPA 5: Verificar se n1 é primo e calcular x1
+    int primo = verificaPrimo(n1);
+    int x1;
+
+    if (primo) {
+        printf("\n[4] %d e primo. Aplicando Pequeno Teorema de Fermat:\n", n1);
+        printf("a^(n1-1) cngr. 1 mod n1\n");
+        x1 = n1 - 1;
+    } else {
+        printf("\n[4] %d nao e primo. Aplicando Teorema de Euler:\n", n1);
+        int phi = calculaTeorema(n1);
+        printf("a^φ(n1) ≡ 1 mod n1\n");
+        x1 = phi;
+    }
+    printf("x1 = %d\n", x1);
+
+    // ETAPA 6: Decompor o expoente x = x1*q + r
+    int q = x / x1;
+    int r = x % x1;
+    printf("\n[5] Decompondo expoente x = %d:\n", x);
+    printf("%d = %d * %d + %d\n", x, x1, q, r);
+
+    // ETAPA 7: Calcular a^x mod n1 usando a decomposição
+    printf("\n[6] Calculando %d^%d mod %d:\n", a, x, n1);
+    printf("Usando (%d^%d)^%d * %d^%d mod %d\n", a, x1, q, a, r, n1);
+
+    int a_x1 = expModular(a, x1, n1);
+    printf("1) %d^%d mod %d = %d\n", a, x1, n1, a_x1);
+
+    int a_x1_q = expModular(a_x1, q, n1);
+    printf("2) (%d)^%d mod %d = %d\n", a_x1, q, n1, a_x1_q);
+
+    int a_r = expModular(a, r, n1);
+    printf("3) %d^%d mod %d = %d\n", a, r, n1, a_r);
+
+    int resultado = (a_x1_q * a_r) % n1;
+    printf("\n-RESULTADO FINAL-\n");
+    printf("(%d * %d) mod %d = %d\n", a_x1_q, a_r, n1, resultado);
+    printf("%d^%d mod %d congr. %d\n", a, x, n1, resultado);
+
+    return 0;
+}
